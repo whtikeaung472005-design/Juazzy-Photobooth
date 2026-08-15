@@ -29,14 +29,34 @@ export const generatePhotoStrip = async (imageSrcArray) => {
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Draw each image onto the master canvas
-  // Note: Images already have filters applied (burned-in) from App.jsx
+  // Target aspect ratio (e.g., 600 / 400 = 1.5)
+  const targetRatio = imgWidth / imgHeight;
+
+  // Draw each image onto the master canvas with Center Cropping (object-fit: cover logic)
   for (let i = 0; i < imageSrcArray.length; i++) {
     const img = await loadImage(imageSrcArray[i]);
     const yPos = padding + (i * (imgHeight + padding));
     
-    // Draw image maintaining ratio or stretch to fit
-    ctx.drawImage(img, padding, yPos, imgWidth, imgHeight);
+    const sourceRatio = img.width / img.height;
+    let sWidth = img.width;
+    let sHeight = img.height;
+    let sx = 0;
+    let sy = 0;
+
+    // Calculate crop dimensions to maintain aspect ratio without squishing
+    if (sourceRatio > targetRatio) {
+      // Source image is wider than target. Crop the width (Left & Right sides).
+      sWidth = img.height * targetRatio;
+      sx = (img.width - sWidth) / 2;
+    } else {
+      // Source image is taller than target. Crop the height (Top & Bottom sides).
+      sHeight = img.width / targetRatio;
+      sy = (img.height - sHeight) / 2;
+    }
+
+    // Draw the precisely cropped image to the canvas
+    // ctx.drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
+    ctx.drawImage(img, sx, sy, sWidth, sHeight, padding, yPos, imgWidth, imgHeight);
     
     // Draw a subtle inner border for realism
     ctx.strokeStyle = '#e5e7eb';
@@ -58,7 +78,11 @@ export const generatePhotoStrip = async (imageSrcArray) => {
   // Date watermark
   ctx.font = '16px "Courier New", Courier, monospace';
   ctx.fillStyle = '#6b7280'; // Gray text
-  ctx.fillText(new Date().toLocaleDateString(), textX, textY + 30);
+  
+  // Format Date (e.g., DD/MM/YYYY)
+  const today = new Date();
+  const dateString = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
+  ctx.fillText(dateString, textX, textY + 30);
 
   // Export as high-quality JPEG
   return canvas.toDataURL('image/jpeg', 0.95);
