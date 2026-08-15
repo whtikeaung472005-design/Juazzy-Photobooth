@@ -1,0 +1,9 @@
+/* Filename: src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  background-color: #f3f4f6; /* Tailwind gray-100 */
+}
